@@ -1,14 +1,13 @@
-use std::fs;
 use std::collections::HashMap;
+use std::fs;
 extern crate regex;
 use regex::Regex;
-
 
 fn get_year(s: &str) -> Option<i32> {
     let re = Regex::new("^\\d{4}$").unwrap();
     if re.is_match(s) {
         let n = s.parse::<i32>().unwrap();
-        return Some(n)
+        return Some(n);
     }
     None
 }
@@ -43,7 +42,7 @@ const FIELDS: [(&str, fn(&str) -> bool); 7] = [
         let s = String::from(v);
         let n = s[..s.len() - 2].parse::<i32>().unwrap();
         if v.ends_with("cm") {
-            return n >= 150 && n <= 193
+            return n >= 150 && n <= 193;
         }
         n >= 59 && n <= 76
     }),
@@ -51,21 +50,22 @@ const FIELDS: [(&str, fn(&str) -> bool); 7] = [
         Regex::new("^#[0-9a-f]{6}").unwrap().is_match(v)
     }),
     ("ecl", |v: &str| -> bool {
-        Regex::new("^(amb|blu|brn|gry|grn|hzl|oth)$").unwrap().is_match(v)
+        Regex::new("^(amb|blu|brn|gry|grn|hzl|oth)$")
+            .unwrap()
+            .is_match(v)
     }),
     ("pid", |v: &str| -> bool {
         Regex::new("^\\d{9}$").unwrap().is_match(v)
     }),
 ];
 
-
 fn is_valid(passport: &HashMap<&str, &str>, validate_fields: bool) -> bool {
     for field in FIELDS {
         if !passport.contains_key(field.0) {
-            return false
+            return false;
         }
         if validate_fields && !field.1(passport.get(field.0).unwrap()) {
-            return false
+            return false;
         }
     }
     true
