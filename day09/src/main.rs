@@ -32,6 +32,7 @@ fn main() {
         }
         group.insert(*num);
     }
+    assert_eq!(part1, 57195069);
     println!("Part 1: {}", part1);
 
     let mut part2: usize = 0;
@@ -55,5 +56,6 @@ fn main() {
             }
         }
     }
+    assert_eq!(part2, 7409241);
     println!("Part 2: {}", part2);
 }
