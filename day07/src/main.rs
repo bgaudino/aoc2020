@@ -18,20 +18,11 @@ fn find_shiny_gold(key: String, map: &HashMap<String, HashMap<String, u32>>) -> 
 }
 
 fn num_bags_contained(key: String, map: &HashMap<String, HashMap<String, u32>>) -> u32 {
-    let mut queue: Vec<&String> = Vec::new();
-    let mut num_bags: u32 = 1;
-    queue.push(&key);
-    while queue.len() > 0 {
-        let bag = queue.pop().unwrap();
-        for (b, count) in map.get(bag).unwrap() {
-            num_bags += count * num_bags_contained(b.to_string(), map);
-        }
+    let mut num_bags: u32 = if key == "shiny gold" { 0 } else { 1 };
+    for (bag, count) in map.get(&key).unwrap() {
+        num_bags += count * num_bags_contained(bag.to_string(), map);
     }
-    if key == "shiny gold" {
-        num_bags - 1
-    } else {
-        num_bags
-    }
+    num_bags
 }
 
 fn main() {
@@ -42,7 +33,6 @@ fn main() {
         let parts: Vec<&str> = line.split(" bags contain ").collect();
         let bag = String::from(parts[0]);
         let rest: Vec<&str> = parts[1].split(", ").collect();
-        // let holds: Vec<(u32, &str)> = Vec::new();
         for item in rest {
             let parts: Vec<&str> = item.split_whitespace().collect();
             let num = parts[0].parse::<u32>();
