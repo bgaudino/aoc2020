@@ -36,14 +36,12 @@ fn main() {
         for item in rest {
             let parts: Vec<&str> = item.split_whitespace().collect();
             let num = parts[0].parse::<u32>();
-            let mut count: u32 = 0;
             match num {
-                Result::Ok(n) => count = n,
+                Result::Ok(count) => {
+                    let name = parts[1..3].join(" ");
+                    m.insert(name, count);
+                }
                 _ => (),
-            }
-            if count > 0 {
-                let name = parts[1..3].join(" ");
-                m.insert(name, count);
             }
         }
         map.insert(bag, m);
