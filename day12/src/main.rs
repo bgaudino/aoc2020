@@ -1,7 +1,7 @@
 use core::ops::{Add, Mul, Sub};
 use std::fs;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct Point {
     x: i32,
     y: i32,
@@ -47,49 +47,79 @@ const DIRECTIONS: [Point; 4] = [
     Point { x: 0, y: -1 },
 ];
 
-const START: Point = Point { x: 0, y: 0 };
+const SHIP_START: Point = Point { x: 0, y: 0 };
+const WAYPOINT_START: Point = Point { x: 10, y: -1 };
 
+#[derive(Debug)]
 struct Ship {
     position: Point,
+    waypoint: Point,
     facing: i32,
 }
 
 impl Ship {
     fn new() -> Self {
         Self {
-            position: START,
+            position: SHIP_START,
+            waypoint: WAYPOINT_START,
             facing: 0,
         }
     }
 
-    fn act_on(&mut self, action: Action) {
+    fn act(&mut self, action: Action) {
         match action {
-            Action::North(distance) => {
-                self.position = self.position + DIRECTIONS[3] * distance;
+            Action::North(distance) => self.position = self.position + DIRECTIONS[3] * distance,
+            Action::South(distance) => self.position = self.position + DIRECTIONS[1] * distance,
+            Action::East(distance) => self.position = self.position + DIRECTIONS[0] * distance,
+            Action::West(distance) => self.position = self.position + DIRECTIONS[2] * distance,
+            Action::Left(degrees) => self.facing = (self.facing - degrees / 90 + 4) % 4,
+            Action::Right(degrees) => self.facing = (self.facing + degrees / 90) % 4,
+            Action::Forward(distance) => {
+                self.position = self.position + DIRECTIONS[self.facing as usize] * distance
             }
-            Action::South(distance) => {
-                self.position = self.position + DIRECTIONS[1] * distance;
-            }
-            Action::East(distance) => {
-                self.position = self.position + DIRECTIONS[0] * distance;
-            }
-            Action::West(distance) => {
-                self.position = self.position + DIRECTIONS[2] * distance;
-            }
+        }
+    }
+
+    fn act_on_waypoint(&mut self, action: Action) {
+        match action {
+            Action::North(distance) => self.waypoint = self.waypoint + DIRECTIONS[3] * distance,
+            Action::South(distance) => self.waypoint = self.waypoint + DIRECTIONS[1] * distance,
+            Action::East(distance) => self.waypoint = self.waypoint + DIRECTIONS[0] * distance,
+            Action::West(distance) => self.waypoint = self.waypoint + DIRECTIONS[2] * distance,
+            Action::Forward(distance) => self.position = self.position + self.waypoint * distance,
             Action::Left(degrees) => {
-                self.facing = (self.facing - degrees / 90 + 4) % 4;
+                let mut d = degrees;
+                while d > 0 {
+                    let new_waypoint = Point {
+                        x: self.waypoint.y,
+                        y: 0 - self.waypoint.x,
+                    };
+                    self.waypoint = new_waypoint;
+                    d -= 90;
+                }
             }
             Action::Right(degrees) => {
-                self.facing = (self.facing + degrees / 90) % 4;
-            }
-            Action::Forward(distance) => {
-                self.position = self.position + DIRECTIONS[self.facing as usize] * distance;
+                let mut d = degrees;
+                while d > 0 {
+                    let new_waypoint = Point {
+                        x: 0 - self.waypoint.y,
+                        y: self.waypoint.x,
+                    };
+                    self.waypoint = new_waypoint;
+                    d -= 90;
+                }
             }
         }
     }
 
     fn distance_from_start(&self) -> i32 {
-        abs(self.position.x - START.x) + abs(self.position.y - START.y)
+        abs(self.position.x) + abs(self.position.y)
+    }
+
+    fn reset(&mut self) {
+        self.position = SHIP_START;
+        self.waypoint = WAYPOINT_START;
+        self.facing = 0;
     }
 }
 
@@ -101,7 +131,7 @@ fn abs(n: i32) -> i32 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Action {
     North(i32),
     South(i32),
@@ -134,9 +164,18 @@ fn main() {
     let actions: Vec<Action> = contents.lines().map(|s| Action::from(s)).collect();
 
     let mut ship = Ship::new();
-    for action in actions {
-        ship.act_on(action);
+    for action in &actions {
+        ship.act(*action);
     }
     let part1 = ship.distance_from_start();
+    assert_eq!(part1, 1603);
     println!("Part 1: {}", part1);
+
+    ship.reset();
+    for action in &actions {
+        ship.act_on_waypoint(*action);
+    }
+    let part2 = ship.distance_from_start();
+    assert_eq!(part2, 52866);
+    println!("Part 2: {}", part2);
 }
