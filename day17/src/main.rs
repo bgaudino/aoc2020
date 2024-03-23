@@ -68,6 +68,58 @@ fn bounds(state: &HashSet<Cube>) -> (i32, i32, i32, i32, i32, i32) {
     (min_x, min_y, min_z, max_x, max_y, max_z)
 }
 
+fn hyper_bounds(state: &HashSet<HyperCube>) -> (i32, i32, i32, i32, i32, i32, i32, i32) {
+    let mut min_x = 0;
+    let mut min_y = 0;
+    let mut min_z = 0;
+    let mut min_w = 0;
+    let mut max_x = 0;
+    let mut max_y = 0;
+    let mut max_z = 0;
+    let mut max_w = 0;
+    for cube in state {
+        let (x, y, z, w) = (cube.0, cube.1, cube.2, cube.3);
+        min_x = min(x, min_x);
+        min_y = min(y, min_y);
+        min_z = min(z, min_z);
+        min_z = min(z, min_z);
+        min_w = min(w, min_w);
+        max_x = max(x, max_x);
+        max_y = max(y, max_y);
+        max_z = max(z, max_z);
+        max_w = max(w, max_w);
+    }
+    (min_x, min_y, min_z, min_w, max_x, max_y, max_z, max_w)
+}
+
+fn perform_hyper_round(state: &HashSet<HyperCube>, deltas: &Vec<HyperCube>) -> HashSet<HyperCube> {
+    let (min_x, min_y, min_z, min_w, max_x, max_y, max_z, max_w) = hyper_bounds(state);
+    let mut new_state: HashSet<HyperCube> = HashSet::new();
+    for w in min_w - 1..=max_w + 1 {
+        for z in min_z - 1..=max_z + 1 {
+            for y in min_y - 1..=max_y + 1 {
+                'outer: for x in min_x - 1..=max_x + 1 {
+                    let cube = HyperCube(x, y, z, w);
+                    let mut active_count = 0;
+                    for delta in deltas {
+                        let neighbor = cube + *delta;
+                        if state.contains(&neighbor) {
+                            active_count += 1;
+                        }
+                        if active_count > 3 {
+                            continue 'outer;
+                        }
+                    }
+                    if active_count == 3 || (state.contains(&cube) && active_count == 2) {
+                        new_state.insert(cube);
+                    }
+                }
+            }
+        }
+    }
+    new_state
+}
+
 fn perform_round(state: &HashSet<Cube>, deltas: &Vec<Cube>) -> HashSet<Cube> {
     let (min_x, min_y, min_z, max_x, max_y, max_z) = bounds(state);
     let mut new_state: HashSet<Cube> = HashSet::new();
@@ -102,12 +154,21 @@ fn main() {
         .unique()
         .map(|p| Cube(*p[0], *p[1], *p[2]))
         .collect();
+    let hyper_nums: [i32; 11] = [1, 1, 1, 1, 0, 0, 0, -1, -1, -1, -1];
+    let hyper_deltas: Vec<HyperCube> = hyper_nums
+        .iter()
+        .permutations(4)
+        .unique()
+        .map(|p| HyperCube(*p[0], *p[1], *p[2], *p[3]))
+        .collect();
 
     let contents: String = fs::read_to_string("data.txt").unwrap();
     let mut x = 0;
     let mut y = 0;
     let z = 0;
+    let w = 0;
     let mut state: HashSet<Cube> = HashSet::new();
+    let mut hyper_state: HashSet<HyperCube> = HashSet::new();
     for ch in contents.chars() {
         if ch == '\n' {
             x = 0;
@@ -116,22 +177,19 @@ fn main() {
         }
         if ch == '#' {
             state.insert(Cube(x, y, z));
+            hyper_state.insert(HyperCube(x, y, z, w));
         }
         x += 1;
     }
     for _ in 0..6 {
         state = perform_round(&state, &deltas);
+        hyper_state = perform_hyper_round(&hyper_state, &hyper_deltas)
     }
     let part1 = state.len();
     assert_eq!(part1, 301);
     println!("Part 1: {}", part1);
 
-    let nums: [i32; 11] = [1, 1, 1, 1, 0, 0, 0, -1, -1, -1, -1];
-    let deltas: Vec<HyperCube> = nums
-        .iter()
-        .permutations(4)
-        .unique()
-        .map(|p| HyperCube(*p[0], *p[1], *p[2], *p[3]))
-        .collect();
-    println!("{:?}", deltas);
+    let part2 = hyper_state.len();
+    assert_eq!(part2, 2424);
+    println!("Part 2: {}", part2);
 }
