@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::cmp::{max, min};
 use std::collections::HashSet;
 use std::fs;
@@ -14,43 +15,23 @@ impl Add for Cube {
     }
 }
 
-impl Cube {
-    fn neighbors(self) -> [Self; 26] {
-        [
-            // top
-            self + Cube(1, 1, 1),
-            self + Cube(1, 0, 1),
-            self + Cube(1, -1, 1),
-            self + Cube(0, 1, 1),
-            self + Cube(0, 0, 1),
-            self + Cube(0, -1, 1),
-            self + Cube(-1, 1, 1),
-            self + Cube(-1, 0, 1),
-            self + Cube(-1, -1, 1),
-            // middle
-            self + Cube(1, 1, 0),
-            self + Cube(1, 0, 0),
-            self + Cube(1, -1, 0),
-            self + Cube(0, 1, 0),
-            self + Cube(0, -1, 0),
-            self + Cube(-1, 1, 0),
-            self + Cube(-1, 0, 0),
-            self + Cube(-1, -1, 0),
-            // bottom
-            self + Cube(1, 1, -1),
-            self + Cube(1, 0, -1),
-            self + Cube(1, -1, -1),
-            self + Cube(0, 1, -1),
-            self + Cube(0, 0, -1),
-            self + Cube(0, -1, -1),
-            self + Cube(-1, 1, -1),
-            self + Cube(-1, 0, -1),
-            self + Cube(-1, -1, -1),
-        ]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+struct HyperCube(i32, i32, i32, i32);
+
+impl Add for HyperCube {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self(
+            self.0 + other.0,
+            self.1 + other.1,
+            self.2 + other.2,
+            self.3 + other.3,
+        )
     }
 }
 
-fn print_state(state: &HashSet<Cube>) {
+fn _print_state(state: &HashSet<Cube>) {
     let (min_x, min_y, min_z, max_x, max_y, max_z) = bounds(state);
     for z in min_z..=max_z {
         println!("z={}", z);
@@ -87,7 +68,7 @@ fn bounds(state: &HashSet<Cube>) -> (i32, i32, i32, i32, i32, i32) {
     (min_x, min_y, min_z, max_x, max_y, max_z)
 }
 
-fn perform_round(state: &HashSet<Cube>) -> HashSet<Cube> {
+fn perform_round(state: &HashSet<Cube>, deltas: &Vec<Cube>) -> HashSet<Cube> {
     let (min_x, min_y, min_z, max_x, max_y, max_z) = bounds(state);
     let mut new_state: HashSet<Cube> = HashSet::new();
     for z in min_z - 1..=max_z + 1 {
@@ -95,7 +76,8 @@ fn perform_round(state: &HashSet<Cube>) -> HashSet<Cube> {
             'outer: for x in min_x - 1..=max_x + 1 {
                 let cube = Cube(x, y, z);
                 let mut active_count = 0;
-                for neighbor in cube.neighbors() {
+                for delta in deltas {
+                    let neighbor = cube + *delta;
                     if state.contains(&neighbor) {
                         active_count += 1;
                     }
@@ -113,6 +95,14 @@ fn perform_round(state: &HashSet<Cube>) -> HashSet<Cube> {
 }
 
 fn main() {
+    let nums: [i32; 8] = [1, 1, 1, 0, 0, -1, -1, -1];
+    let deltas: Vec<Cube> = nums
+        .iter()
+        .permutations(3)
+        .unique()
+        .map(|p| Cube(*p[0], *p[1], *p[2]))
+        .collect();
+
     let contents: String = fs::read_to_string("data.txt").unwrap();
     let mut x = 0;
     let mut y = 0;
@@ -130,9 +120,18 @@ fn main() {
         x += 1;
     }
     for _ in 0..6 {
-        state = perform_round(&state);
+        state = perform_round(&state, &deltas);
     }
     let part1 = state.len();
     assert_eq!(part1, 301);
     println!("Part 1: {}", part1);
+
+    let nums: [i32; 11] = [1, 1, 1, 1, 0, 0, 0, -1, -1, -1, -1];
+    let deltas: Vec<HyperCube> = nums
+        .iter()
+        .permutations(4)
+        .unique()
+        .map(|p| HyperCube(*p[0], *p[1], *p[2], *p[3]))
+        .collect();
+    println!("{:?}", deltas);
 }
